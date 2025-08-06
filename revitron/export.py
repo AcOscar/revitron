@@ -94,7 +94,14 @@ class DWGExporter:
 		    revitron.DOC, setupName
 		)
 
-	def exportSheet(self, sheet, directory, unit, template=False):
+	def exportSheet(
+		self, 
+		sheet, 
+		directory, 
+		unit, 
+		template=False, 
+		sanitize=True
+	):
 		"""
 		Exports a sheet.
 
@@ -103,6 +110,7 @@ class DWGExporter:
 			directory (string): The export directory
 			unit (object): The `export unit <https://www.revitapidocs.com/2020/1d3eb4f4-81d2-10a6-3eab-4a9c20e39053.htm>`_
 			template (string, optional): A name template. Defaults to '{Sheet Number}-{Sheet Name}'.
+			sanitize (Boolean, optional): should sanitize or not
 
 		Returns:
 			string: The path of the exported PDF. False on error.
@@ -121,7 +129,8 @@ class DWGExporter:
 			template = '{Sheet Number}-{Sheet Name}'
 
 		fullPath = os.path.join(
-		    directory, revitron.ParameterTemplate(sheet, template).render() + '.dwg'
+		    directory, revitron.ParameterTemplate(sheet, template, sanitize).render() + '.dwg'
+
 		)
 
 		path = os.path.dirname(fullPath)
@@ -195,8 +204,9 @@ class PDFExporter:
 	    orientation='Landscape',
 	    colorMode='Color',
 	    directory=False,
-	    template=False
-		):
+	    template=False, 
+		sanitize=True
+	):
 		"""
 		Prints a sheet.
 
@@ -229,7 +239,7 @@ class PDFExporter:
 		print ("Sheet_Naming_Template:" + template)
 
 		path = os.path.join(
-		    directory, revitron.ParameterTemplate(sheet, template).render() + '.pdf'
+		    directory, revitron.ParameterTemplate(sheet, template, sanitize).render() + '.pdf'
 		)
 		print ("path:" + path)
 		if not os.path.exists(os.path.dirname(path)):
@@ -300,13 +310,17 @@ class PDFExporter:
 
 		while (time.time() - timePassed) < 10 and not moved:
 			time.sleep(0.5)
+
 			tempFiles = glob.glob(self.tempOutputPattern(sheet))
 			print ("tempFiles" + str(tempFiles))
 			if tempFiles:
+
 				tempFile = tempFiles[0]
+
 				time.sleep(2)
 				print ("tempFile" + tempFile)
 				if os.access(tempFile, os.W_OK):
+
 					try:
 						print(tempFile, path)
 						shutil.move(tempFile, path)
