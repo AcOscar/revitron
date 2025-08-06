@@ -8,8 +8,8 @@ The following example demonstrates how to write data to table cells in a sheet c
 """
 import clr
 
-clr.AddReference("Microsoft.Office.Interop.Excel")
-import Microsoft.Office.Interop.Excel as Excel
+#clr.AddReference("Microsoft.Office.Interop.Excel")
+#import Microsoft.Office.Interop.Excel as Excel
 
 
 class ExcelWorkbook:
