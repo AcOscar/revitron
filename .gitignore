@@ -3,3 +3,4 @@ __pycache__
 /.vscode
 /tests/temp
 /cli/target.rvt
+Thumbs.db
