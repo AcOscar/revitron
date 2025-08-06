@@ -16,7 +16,7 @@ with a felxible configuration stored in a document.
 """
 #-*- coding: UTF-8 -*-
 import os, shutil, time, sys, glob, re
-from pyrevit import script
+from pyrevit import script, output
 from System.Collections.Generic import List
 
 
@@ -158,7 +158,12 @@ class PDFExporter:
 			output (string): The printer output directory 
 		"""
 		import revitron
+		
+		temppath = r"C:\Temp"
 
+		if not os.path.exists(temppath):
+			os.makedirs(temppath)
+			
 		if not printer or not output:
 			revitron.Log().warning('PDF exporter is not configured!')
 			sys.exit()
@@ -191,7 +196,7 @@ class PDFExporter:
 	    colorMode='Color',
 	    directory=False,
 	    template=False
-	):
+		):
 		"""
 		Prints a sheet.
 
@@ -220,11 +225,13 @@ class PDFExporter:
 
 		if not template:
 			template = '{Sheet Number}-{Sheet Name}'
+			
+		print ("Sheet_Naming_Template:" + template)
 
 		path = os.path.join(
 		    directory, revitron.ParameterTemplate(sheet, template).render() + '.pdf'
 		)
-
+		print ("path:" + path)
 		if not os.path.exists(os.path.dirname(path)):
 			os.makedirs(os.path.dirname(path))
 
@@ -238,6 +245,8 @@ class PDFExporter:
 		viewSheetSetting.SaveAs("_temp_")
 
 		self.manager.PrintSetup.SaveAs("_temp_")
+		self.manager.PrintToFileName = r"c:\Temp\Revitron.pdf"
+
 		self.manager.Apply()
 
 		orientation = getattr(revitron.DB.PageOrientationType, orientation)
@@ -248,7 +257,13 @@ class PDFExporter:
 		printParameters.Zoom = 100
 		printParameters.PaperPlacement = revitron.DB.PaperPlacementType.Center
 		printParameters.PageOrientation = orientation
-		printParameters.PaperSize = self.sizes[size]
+		#a warning instead of crashing
+		if size in self.sizes:
+			printParameters.PaperSize = self.sizes[size]
+		else:
+			print('Warning: PaperSize "{}" not exist. Using A4 instead!'.format (size))
+			printParameters.PaperSize = self.sizes.get("A4")
+			
 		printParameters.RasterQuality = revitron.DB.RasterQualityType.High
 		printParameters.ColorDepth = getattr(revitron.DB.ColorDepthType, colorMode)
 
@@ -258,10 +273,15 @@ class PDFExporter:
 		printParameters.Zoom = 100
 		printParameters.PaperPlacement = revitron.DB.PaperPlacementType.Center
 		printParameters.PageOrientation = orientation
-		printParameters.PaperSize = self.sizes[size]
+		#a warning instead of crashing
+		if size in self.sizes:
+			printParameters.PaperSize = self.sizes[size]
+		else:
+			print('Warning: PaperSize "{}" not exist. Using A4 instead!'.format (size))
+			printParameters.PaperSize = self.sizes.get("A4")
+			
 		printParameters.RasterQuality = revitron.DB.RasterQualityType.High
 		printParameters.ColorDepth = getattr(revitron.DB.ColorDepthType, colorMode)
-
 		# Again save settings.
 		try:
 			self.manager.PrintSetup.Save()
@@ -278,14 +298,17 @@ class PDFExporter:
 		timePassed = time.time()
 		moved = False
 
-		while (time.time() - timePassed) < 30 and not moved:
+		while (time.time() - timePassed) < 10 and not moved:
 			time.sleep(0.5)
 			tempFiles = glob.glob(self.tempOutputPattern(sheet))
+			print ("tempFiles" + str(tempFiles))
 			if tempFiles:
 				tempFile = tempFiles[0]
 				time.sleep(2)
+				print ("tempFile" + tempFile)
 				if os.access(tempFile, os.W_OK):
 					try:
+						print(tempFile, path)
 						shutil.move(tempFile, path)
 						moved = True
 					except:
@@ -316,10 +339,13 @@ class PDFExporter:
 			string: The generated glob pattern
 		"""
 		import revitron
-
-		nr = re.sub(r'[^a-zA-Z0-9]+', '*', revitron.Element(sheet).get('Sheet Number'))
-		name = re.sub(r'[^a-zA-Z0-9]+', '*', revitron.Element(sheet).get('Sheet Name'))
+		#from pyrevit import script, output
+		from pyrevit import revit, DB
+		
+		nr = re.sub(r'[^a-zA-Z0-9]+', '*', sheet.get_Parameter(DB.BuiltInParameter.SHEET_NUMBER).AsString())
+		name = re.sub(r'[^a-zA-Z0-9]+', '*', sheet.get_Parameter(DB.BuiltInParameter.SHEET_NAME).AsString())
 		printToFileName = re.sub(
 		    r'\.pdf$', '', os.path.basename(self.manager.PrintToFileName)
 		)
-		return '{}/{}*Sheet*{}*{}*.pdf'.format(self.output, printToFileName, nr, name)
+		print  '{}\*{}*{}*.pdf'.format(self.output, nr, name)
+		return '{}\*{}*{}*.pdf'.format(self.output, nr, name)
