@@ -74,13 +74,41 @@ class String:
 
 	@staticmethod
 	def sanitize(string):
-		string = string.replace('ü', 'ue')
-		string = string.replace('Ü', 'Ue')
-		string = string.replace('ö', 'oe')
-		string = string.replace('Ö', 'Oe')
-		string = string.replace('ä', 'ae')
-		string = string.replace('Ä', 'Ae')
-		string = re.sub('[^a-zA-Z0-9_\-]', '_', string)
-		string = re.sub('_+', '_', string)
-		string = re.sub('(-_|_-)', '-', string)
+		#string = string.replace('ü', 'ue')
+		#string = string.replace('Ü', 'Ue')
+		#string = string.replace('ö', 'oe')
+		#string = string.replace('Ö', 'Oe')
+		#string = string.replace('ä', 'ae')
+		#string = string.replace('Ä', 'Ae')
+		#string = re.sub('[^a-zA-Z0-9_\-]', '_', string)
+		#string = re.sub('[^a-zA-Z0-9_\- ]', '_', string)
+		#string = re.sub('_+', '_', string)
+		#string = re.sub('(-_|_-)', '-', string)
+		# replaced all unallowd chars where not permitted by the os
+		# Verbotene Zeichen ersetzen
+		string = re.sub(r'[<>:"/\\|?*]', '_', string)
+		
+		# Entferne Steuerzeichen (ASCII < 32)
+		string = ''.join(c for c in string if ord(c) >= 32)
+		
+		# Entferne abschließende Punkte oder Leerzeichen
+		string = string.rstrip('. ')
+		
+		# Reservierte Windows-Dateinamen (unabhängig von der Endung)
+		reserved = set(["CON", "PRN", "AUX", "NUL"] + ["COM{}".format(i) for i in range(1, 10)] + ["LPT{}".format(i) for i in range(1, 10)])
+
+		base = string
+		ext = ''
+		
+		# Trenne Erweiterung ab, wenn vorhanden
+		if '.' in string:
+			base, ext = string.rsplit('.', 1)
+		
+		# Prüfe auf reservierte Namen (Groß-/Kleinschreibung egal)
+		if base.upper() in reserved:
+			base = "_{}".format(base)
+		
+		# Baue Dateiname wieder zusammen
+		filename = "{}.{}".format(base, ext) if ext else base
+
 		return string
